@@ -3,3 +3,4 @@ uvicorn
 sqlalchemy
 qrcode[pil]
 pillow
+psycopg2-binary
