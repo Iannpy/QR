@@ -52,7 +52,7 @@ def create_qr(slug: str, target_url: str, db: Session = Depends(get_db)):
     if not os.path.exists("qrs"): os.makedirs("qrs")
     
     # IMPORTANTE: Cambia esta URL por la de tu servidor real cuando lo despliegues
-    base_url = "http://127.0.0.1:8000" 
+    base_url = "https://railway.com/railway.schema.json" 
     qr_content = f"{base_url}/r/{slug}"
     
     img = qrcode.make(qr_content)
