@@ -1,11 +1,11 @@
 import qrcode
+import os
 from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
-import os
 
 # --- CONFIGURACIÓN DE BASE DE DATOS ---
 SQLALCHEMY_DATABASE_URL = "sqlite:///./qr_manager.db"
@@ -30,45 +30,41 @@ class Scan(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# --- APP ---
-app = FastAPI(title="Generador QR Pro")
+app = FastAPI()
 
 def get_db():
     db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    try: yield db
+    finally: db.close()
 
-# 1. Crear un nuevo QR Dinámico
+# --- RUTAS ---
+
 @app.post("/create/{slug}")
-def create_qr(slug: str, target_url: str, db: Session = Depends(get_db)):
-    # Guardar en DB
+def create_qr(slug: str, target_url: str, request: Request, db: Session = Depends(get_db)):
+    # Intentar guardar en DB
     db_link = Link(slug=slug, target_url=target_url)
     db.add(db_link)
-    db.commit()
+    try:
+        db.commit()
+    except:
+        raise HTTPException(status_code=400, detail="El slug ya existe")
     
-    # Generar Imagen QR (Apunta a tu futuro dominio)
-    if not os.path.exists("qrs"): os.makedirs("qrs")
-    
-    # IMPORTANTE: Cambia esta URL por la de tu servidor real cuando lo despliegues
-    base_url = "https://railway.com/railway.schema.json" 
+    # Detectar la URL del servidor automáticamente
+    base_url = str(request.base_url).rstrip('/')
     qr_content = f"{base_url}/r/{slug}"
     
+    if not os.path.exists("qrs"): os.makedirs("qrs")
     img = qrcode.make(qr_content)
-    img_path = f"qrs/{slug}.png"
-    img.save(img_path)
+    img.save(f"qrs/{slug}.png")
     
-    return {"message": "QR Creado", "scan_url": qr_content, "qr_image": f"/download/{slug}"}
+    return {"message": "QR Creado", "link_para_escanear": qr_content}
 
-# 2. El Redireccionador (Métricas)
 @app.get("/r/{slug}")
 def redirect_and_track(slug: str, request: Request, db: Session = Depends(get_db)):
     link = db.query(Link).filter(Link.slug == slug).first()
-    if not link:
-        raise HTTPException(status_code=404, detail="QR no encontrado")
+    if not link: raise HTTPException(status_code=404)
 
-    # Registrar métrica
+    # Registro de métricas
     new_scan = Scan(
         link_id=link.id,
         user_agent=request.headers.get("user-agent"),
@@ -79,18 +75,18 @@ def redirect_and_track(slug: str, request: Request, db: Session = Depends(get_db
 
     return RedirectResponse(url=link.target_url)
 
-# 3. Ver Estadísticas
 @app.get("/stats/{slug}")
 def get_stats(slug: str, db: Session = Depends(get_db)):
     link = db.query(Link).filter(Link.slug == slug).first()
+    if not link: raise HTTPException(status_code=404)
     scans = db.query(Scan).filter(Scan.link_id == link.id).all()
     return {
-        "slug": slug,
-        "total_scans": len(scans),
-        "history": [{"hora": s.timestamp, "dispositivo": s.user_agent} for s in scans]
+        "total_escaneos": len(scans),
+        "historial": [{"fecha": s.timestamp, "dispositivo": s.user_agent} for s in scans]
     }
 
-# 4. Descargar el PNG del QR
 @app.get("/download/{slug}")
 def download_qr(slug: str):
-    return FileResponse(f"qrs/{slug}.png")
+    path = f"qrs/{slug}.png"
+    if os.path.exists(path): return FileResponse(path)
+    return {"error": "No existe el archivo"}
