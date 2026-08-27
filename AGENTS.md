@@ -20,6 +20,7 @@ Dokploy builds this repo as a Docker image from the `Dockerfile` at the root.
 - **Database**: usa SQLite (sin `DATABASE_URL`), adecuado para eventos puntuales. El archivo es `qr_manager.db` en `/app`. Como el FS del contenedor es efímero, **montá un volumen en `/app/qr_manager.db`** en el servicio Dokploy, o perderás el historial de escaneos en cada redeploy. Las tablas se crean solas al arrancar (`Base.metadata.create_all`), así que un volumen vacío funciona.
 - **QR images**: generated PNGs land in `qrs/` inside the container (also ephemeral). Si los QR deben sobrevivir al redeploy, montá también un volumen en `/app/qrs`.
 - The image already copies the existing `qrs/` contents, so pre-made QRs (e.g. `ANATO.png`) keep working.
+- **Domain port gotcha**: the Dokploy Domain setting "port where the app runs inside the container" defaults to `3000`. The app listens on `8000`, so you MUST set the Domain Port to `8000` or Traefik returns Bad Gateway (502).
 
 ## Database
 - Tables are auto-created on startup by `Base.metadata.create_all(bind=engine)` (main.py:41). There is NO migration system.
