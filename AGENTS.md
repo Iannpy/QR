@@ -6,6 +6,7 @@ Compact guidance for OpenCode sessions in this repo.
 A single-file FastAPI app (`main.py`) that generates QR codes and tracks scans.
 - QR PNGs are written to `qrs/<slug>.png`.
 - Click tracking via a `Scan` table; redirects via `/r/{slug}`.
+- There is a built-in web UI (HTML served by FastAPI, no build step): `/` generates a QR, `/dashboard` shows scan stats per slug.
 - No package structure, no tests, no lint, no typecheck, no CI are configured. Do not invent these commands.
 
 ## Run it

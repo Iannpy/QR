@@ -1,7 +1,7 @@
 import qrcode
 import os
 from fastapi import FastAPI, Depends, Request, HTTPException
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -101,3 +101,120 @@ def download_qr(slug: str):
     path = f"qrs/{slug}.png"
     if os.path.exists(path): return FileResponse(path)
     return {"error": "Archivo no encontrado. ¿Ya creaste el QR?"}
+
+# --- FRONTEND (HTML sin build, mismo proceso) ---
+
+HTML_HEAD = """<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Tracker</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --text:#e2e8f0; --muted:#94a3b8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:14px 24px; background:var(--card); display:flex; gap:20px; align-items:center; }
+  header a { color:var(--accent); text-decoration:none; font-weight:600; }
+  header a.act { text-decoration:underline; }
+  main { max-width:720px; margin:32px auto; padding:0 16px; }
+  .card { background:var(--card); border-radius:12px; padding:24px; margin-bottom:24px; }
+  h1 { margin-top:0; font-size:22px; }
+  label { display:block; margin:14px 0 4px; color:var(--muted); font-size:14px; }
+  input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:var(--text); }
+  button { margin-top:16px; padding:10px 18px; border:none; border-radius:8px; background:var(--accent); color:#0f172a; font-weight:700; cursor:pointer; }
+  .result { margin-top:20px; }
+  img.qr { width:240px; height:240px; background:#fff; border-radius:8px; padding:8px; }
+  .muted { color:var(--muted); font-size:14px; }
+  a { color:var(--accent); }
+  table { width:100%; border-collapse:collapse; margin-top:12px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid #334155; font-size:14px; }
+  .code { background:#0f172a; padding:4px 8px; border-radius:6px; font-family:monospace; word-break:break-all; }
+  .err { color:#f87171; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" id="nav-gen">Generar QR</a>
+  <a href="/dashboard" id="nav-dash">Dashboard</a>
+</header>
+<main>
+"""
+
+HTML_FOOT = "</main></body></html>"
+
+
+def _page(content: str, active: str = "") -> str:
+    nav = f'<script>document.getElementById("{active}").classList.add("act");</script>' if active else ""
+    return HTML_HEAD + content + nav + HTML_FOOT
+
+
+GEN_PAGE = """
+<div class="card">
+  <h1>Generar QR dinámico</h1>
+  <p class="muted">Crea un QR que redirige y registra cada escaneo.</p>
+  <label>Slug (identificador corto, sin espacios)</label>
+  <input id="slug" placeholder="mi-evento">
+  <label>URL de destino</label>
+  <input id="url" placeholder="https://example.com">
+  <button onclick="crear()">Generar QR</button>
+  <div class="result" id="result"></div>
+</div>
+<script>
+async function crear(){
+  const slug = document.getElementById('slug').value.trim();
+  const url = document.getElementById('url').value.trim();
+  const r = document.getElementById('result');
+  if(!slug || !url){ r.innerHTML = '<p class="err">Completa slug y URL.</p>'; return; }
+  r.innerHTML = '<p class="muted">Generando...</p>';
+  try {
+    const res = await fetch(`/create/${encodeURIComponent(slug)}?target_url=${encodeURIComponent(url)}`, {method:'POST'});
+    if(!res.ok){ const e = await res.json(); r.innerHTML = `<p class="err">${e.detail || 'Error'}</p>`; return; }
+    const data = await res.json();
+    r.innerHTML = `
+      <img class="qr" src="/download/${slug}">
+      <p><b>URL de rastreo:</b> <span class="code">${data.url_rastreo}</span></p>
+      <p><a href="/r/${slug}" target="_blank">Abrir /r/${slug}</a> &middot; <a href="/download/${slug}" download>Descargar PNG</a></p>`;
+  } catch(e){ r.innerHTML = '<p class="err">Fallo la conexión con el servidor.</p>'; }
+}
+</script>
+"""
+
+
+DASH_PAGE = """
+<div class="card">
+  <h1>Dashboard de traqueo</h1>
+  <label>Slug</label>
+  <input id="slug" placeholder="mi-evento">
+  <button onclick="cargar()">Ver estadísticas</button>
+  <div class="result" id="result"></div>
+</div>
+<script>
+async function cargar(){
+  const slug = document.getElementById('slug').value.trim();
+  const r = document.getElementById('result');
+  if(!slug){ r.innerHTML = '<p class="err">Ingresa un slug.</p>'; return; }
+  r.innerHTML = '<p class="muted">Cargando...</p>';
+  try {
+    const res = await fetch(`/stats/${encodeURIComponent(slug)}`);
+    if(!res.ok){ r.innerHTML = '<p class="err">QR no encontrado.</p>'; return; }
+    const d = await res.json();
+    const rows = (d.clicks || []).map(c =>
+      `<tr><td>${new Date(c.fecha).toLocaleString()}</td><td>${c.navegador || ''}</td></tr>`).join('');
+    r.innerHTML = `<p><b>Total de escaneos:</b> ${d.total_escaneos}</p>
+      <table><thead><tr><th>Fecha</th><th>Navegador</th></tr></thead><tbody>${rows}</tbody></table>
+      <button onclick="cargar()">Recargar</button>`;
+  } catch(e){ r.innerHTML = '<p class="err">Fallo la conexión con el servidor.</p>'; }
+}
+</script>
+"""
+
+
+@app.get("/", response_class=HTMLResponse)
+def genera_page():
+    return HTMLResponse(content=_page(GEN_PAGE, "nav-gen"))
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard_page():
+    return HTMLResponse(content=_page(DASH_PAGE, "nav-dash"))
