@@ -8,6 +8,13 @@ from qrcode.image.svg import SvgPathImage
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, Request, HTTPException, Form
 from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse, Response, JSONResponse
+
+# qrcode cambió el nombre de la constante entre versiones (ERROR_CORRECT_H -> ERROR_CORRECTION_H).
+# Nos adaptamos a la que exista para no romper en distintas versiones/pinned de la librería.
+try:
+    QR_ERROR_CORRECTION_H = qrcode.constants.ERROR_CORRECTION_H
+except AttributeError:
+    QR_ERROR_CORRECTION_H = qrcode.constants.ERROR_CORRECT_H
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -363,7 +370,7 @@ def _embed_logo(qr_img: Image.Image, logo_data_uri: str, size: int) -> Image.Ima
 
 def _make_qr_png(content: str, size: int, color: str, logo: str | None) -> bytes:
     qr = qrcode.QRCode(
-        error_correction=qrcode.constants.ERROR_CORRECTION_H,
+        error_correction=QR_ERROR_CORRECTION_H,
         box_size=10,
         border=4,
     )
@@ -391,7 +398,7 @@ def generate_qr(data: QRGenerateRequest):
 
     if fmt == "svg":
         qr = qrcode.QRCode(
-            error_correction=qrcode.constants.ERROR_CORRECTION_H,
+            error_correction=QR_ERROR_CORRECTION_H,
             box_size=10,
             border=4,
         )
