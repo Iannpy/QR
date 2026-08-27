@@ -4,3 +4,4 @@ __pycache__/
 qr_manager.db
 qrs/*.png
 data/
+.atl/
