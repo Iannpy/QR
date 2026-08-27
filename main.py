@@ -15,9 +15,12 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Si no hay DATABASE_URL (estás en tu PC), usa SQLite
+# Si no hay DATABASE_URL (estás en tu PC / Dokploy sin Postgres), usa SQLite
+# en /app/data para poder montar un volumen en ese directorio (un archivo suelto
+# no se puede montar como volumen en Docker).
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///./qr_manager.db"
+    os.makedirs("data", exist_ok=True)
+    DATABASE_URL = "sqlite:///data/qr_manager.db"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

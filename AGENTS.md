@@ -17,15 +17,18 @@ Use the existing virtualenv `venv/` (Python 3.14 per `venv/pyvenv.cfg`).
 ## Deploy on Dokploy
 Dokploy builds this repo as a Docker image from the `Dockerfile` at the root.
 - The container binds `0.0.0.0` and listens on `$PORT` (fallback `8000`). Set the service **Port** in Dokploy to match (e.g. `8000`) or export `PORT` in the env.
-- **Database**: usa SQLite (sin `DATABASE_URL`), adecuado para eventos puntuales. El archivo es `qr_manager.db` en `/app`. Como el FS del contenedor es efímero, **montá un volumen en `/app/qr_manager.db`** en el servicio Dokploy, o perderás el historial de escaneos en cada redeploy. Las tablas se crean solas al arrancar (`Base.metadata.create_all`), así que un volumen vacío funciona.
-- **QR images**: generated PNGs land in `qrs/` inside the container (also ephemeral). Si los QR deben sobrevivir al redeploy, montá también un volumen en `/app/qrs`.
+- **Persistence (CRITICAL): the container FS is ephemeral — every redeploy wipes runtime data.** Mount TWO named volumes in the Dokploy service or you lose everything on each redeploy:
+  - `/app/data` → holds `qr_manager.db` (links + scan history). The app writes the DB here (main.py:20).
+  - `/app/qrs` → holds the generated QR PNGs.
+  - Without these, a redeploy deletes all QR images and scan stats (this already happened once). Tables self-create on startup (`Base.metadata.create_all`), so empty volumes work.
+- Do NOT mount a volume on the bare file `/app/qr_manager.db`: Docker can only volume-mount directories, not single files, so it would break the DB. The `/app/data` directory mount is the correct approach.
 - The image already copies the existing `qrs/` contents, so pre-made QRs (e.g. `ANATO.png`) keep working.
 - **Domain port gotcha**: the Dokploy Domain setting "port where the app runs inside the container" defaults to `3000`. The app listens on `8000`, so you MUST set the Domain Port to `8000` or Traefik returns Bad Gateway (502).
 
 ## Database
 - Tables are auto-created on startup by `Base.metadata.create_all(bind=engine)` (main.py:41). There is NO migration system.
   - To change the schema, drop/recreate the DB or run a manual `ALTER` — codegen/migrations won't help.
-- Local/dev uses SQLite file `qr_manager.db` (created if no `DATABASE_URL`).
+- Local/dev uses SQLite file `data/qr_manager.db` (created if no `DATABASE_URL`).
 - Deploy uses Postgres via `DATABASE_URL`. Note the quirk at main.py:15 — `postgres://` is rewritten to `postgresql://` because SQLAlchemy requires the latter.
 
 ## Auth
@@ -37,6 +40,6 @@ Simple single-admin login (no user system). Cookie signed with HMAC-SHA256, no e
 
 ## Gotchas
 - `procfile` is lowercase. Deploy platforms (Railway/Heroku) auto-detect a capital `Procfile`. On Dokploy the `Dockerfile` is authoritative, so the filename case does not matter there. Verify the deploy target still works before trusting this file.
-- No `.gitignore` exists. Generated artifacts are committed: `qr_manager.db`, `qrs/*.png`, and `__pycache__/`. Review `git status` carefully so you don't accidentally commit DB/PNG changes.
+- A `.gitignore` exists and excludes `venv/`, `__pycache__/`, `qr_manager.db`, and `qrs/*.png`. The DB is generated at runtime in `/app/data` (volume-mounted), so it is never committed.
 - `requirements.txt` is unpinned (no version ranges). Upgrades can break silently.
 - Slug collisions raise a generic 400 (broad `except` at main.py:58); uniqueness is enforced by the DB, not validated first.
