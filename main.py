@@ -15,10 +15,11 @@ try:
     QR_ERROR_CORRECTION_H = qrcode.constants.ERROR_CORRECTION_H
 except AttributeError:
     QR_ERROR_CORRECTION_H = qrcode.constants.ERROR_CORRECT_H
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from datetime import datetime
+from datetime import datetime, date, time, timezone
+from zoneinfo import ZoneInfo
 
 # --- CONFIGURACIÓN DE BASE DE DATOS (POSTGRES O SQLITE) ---
 # Railway nos da la URL en una variable llamada DATABASE_URL
@@ -39,6 +40,10 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+# Zona horaria para la agregación de escaneos del dashboard público.
+# DEFAULT America/Bogota (GMT-5). Configurable vía DASHBOARD_TZ.
+DASHBOARD_TZ = os.getenv("DASHBOARD_TZ", "America/Bogota")
+
 # --- MODELOS (Iguales que antes) ---
 class Link(Base):
     __tablename__ = "links"
@@ -53,6 +58,12 @@ class Scan(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     user_agent = Column(String)
     ip_address = Column(String)
+
+
+class DashboardState(Base):
+    __tablename__ = "dashboard_states"
+    link_id = Column(Integer, ForeignKey("links.id"), primary_key=True, unique=True)
+    enabled = Column(Boolean, nullable=False, default=False)
 
 Base.metadata.create_all(bind=engine)
 
@@ -486,12 +497,110 @@ def create_tracked_qr(
 
 @app.get("/api/qrs")
 def list_qrs(db: Session = Depends(get_db), _: Optional[Response] = Depends(require_api)):
-    links = db.query(Link).order_by(Link.id.desc()).all()
+    rows = (
+        db.query(Link, DashboardState)
+        .outerjoin(DashboardState, DashboardState.link_id == Link.id)
+        .order_by(Link.id.desc())
+        .all()
+    )
     result = []
-    for l in links:
+    for l, ds in rows:
         count = db.query(Scan).filter(Scan.link_id == l.id).count()
-        result.append({"slug": l.slug, "target_url": l.target_url, "scan_count": count})
+        result.append(
+            {
+                "slug": l.slug,
+                "target_url": l.target_url,
+                "scan_count": count,
+                "dashboard_enabled": bool(ds.enabled) if ds else False,
+            }
+        )
     return result
+
+
+# --- DASHBOARD PÚBLICO POR QR (proyección en pantalla, SIN auth) ---
+@app.get("/api/public-stats/{slug}")
+def public_stats(slug: str, date: str | None = None, db: Session = Depends(get_db)):
+    link = db.query(Link).filter(Link.slug == slug).first()
+    if not link:
+        raise HTTPException(status_code=404, detail="QR no encontrado")
+
+    ds = db.query(DashboardState).filter(DashboardState.link_id == link.id).first()
+    if ds is None or not ds.enabled:
+        return JSONResponse(status_code=403, content={"error": "dashboard apagado"})
+
+    tz = ZoneInfo(DASHBOARD_TZ)
+
+    if date:
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Fecha inválida (usa YYYY-MM-DD)")
+    else:
+        target_date = datetime.now(tz).date()
+
+    # Ventana del día en la TZ, convertida a UTC naive para filtrar en SQL.
+    start_local = datetime.combine(target_date, time.min, tzinfo=tz)
+    end_local = datetime.combine(target_date, time.max, tzinfo=tz)
+    start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+
+    scans = (
+        db.query(Scan)
+        .filter(Scan.link_id == link.id, Scan.timestamp >= start_utc, Scan.timestamp < end_utc)
+        .all()
+    )
+
+    buckets = [0] * 24
+    last_local = None
+    for s in scans:
+        if s.timestamp is None:
+            continue
+        local = s.timestamp.replace(tzinfo=timezone.utc).astimezone(tz)
+        buckets[local.hour] += 1
+        if last_local is None or local > last_local:
+            last_local = local
+
+    total = len(scans)
+    hora_pico = max(range(24), key=lambda h: buckets[h])
+    time_series = [
+        {"ts": start_local.replace(hour=h).isoformat(), "count": buckets[h]}
+        for h in range(24)
+    ]
+
+    return {
+        "total_escaneos": total,
+        "hora_pico": {"hour": hora_pico, "count": buckets[hora_pico]},
+        "ultimo_escaneo": last_local.isoformat() if last_local else None,
+        "escaneos_por_hora": buckets,
+        "time_series": time_series,
+        "tz": DASHBOARD_TZ,
+        "dia": target_date.isoformat(),
+    }
+
+
+class DashboardToggleRequest(BaseModel):
+    enabled: bool
+
+
+@app.post("/api/qr/{slug}/dashboard")
+def set_dashboard(
+    slug: str,
+    data: DashboardToggleRequest,
+    db: Session = Depends(get_db),
+    _: Optional[Response] = Depends(require_api),
+):
+    link = db.query(Link).filter(Link.slug == slug).first()
+    if not link:
+        raise HTTPException(status_code=404, detail="QR no encontrado")
+
+    ds = db.query(DashboardState).filter(DashboardState.link_id == link.id).first()
+    if ds is None:
+        ds = DashboardState(link_id=link.id, enabled=data.enabled)
+        db.add(ds)
+    else:
+        ds.enabled = data.enabled
+    db.commit()
+    return {"slug": slug, "enabled": data.enabled}
 
 
 # --- SERVIR EL FRONTEND (SPA React) DESDE EL MISMO PROCESO ---
