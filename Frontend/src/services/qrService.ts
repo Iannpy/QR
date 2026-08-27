@@ -5,6 +5,8 @@ import type {
   TrackedQRResponse,
   QrListItem,
   StatsResponse,
+  PublicStatsResponse,
+  DashboardToggleResponse,
 } from "../types";
 import { API_ENDPOINTS } from "../constants";
 
@@ -66,6 +68,37 @@ export class QRService {
     if (!response.ok) {
       if (response.status === 401) throw new Error("No autenticado.");
       throw new Error(result.detail || "Error al obtener estadísticas");
+    }
+    return result;
+  }
+
+  /**
+   * Estadísticas públicas del dashboard de un slug (SIN auth).
+   * Lanza un error con `.status` 403 si el dashboard está apagado, 404 si el slug no existe.
+   */
+  static async getPublicStats(slug: string, date?: string): Promise<PublicStatsResponse> {
+    const url = `/api/public-stats/${encodeURIComponent(slug)}` + (date ? `?date=${encodeURIComponent(date)}` : "");
+    const response = await fetch(url);
+    const result = await response.json();
+    if (!response.ok) {
+      const err = new Error(result.error || "Error al obtener estadísticas públicas") as Error & { status?: number };
+      err.status = response.status;
+      throw err;
+    }
+    return result;
+  }
+
+  /** Activa/desactiva el dashboard público de un slug. Requiere auth. */
+  static async setDashboardEnabled(slug: string, enabled: boolean): Promise<DashboardToggleResponse> {
+    const response = await fetch(`/api/qr/${encodeURIComponent(slug)}/dashboard`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      if (response.status === 401) throw new Error("No autenticado.");
+      throw new Error(result.detail || "Error al actualizar el dashboard");
     }
     return result;
   }

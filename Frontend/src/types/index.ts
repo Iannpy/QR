@@ -53,11 +53,28 @@ export interface QrListItem {
   slug: string;
   target_url: string;
   scan_count: number;
+  dashboard_enabled?: boolean;
 }
 
 export interface StatsResponse {
   slug: string;
   total_escaneos: number;
   clicks: Array<{ fecha: string; navegador: string }>;
+}
+
+// --- Dashboard público por QR ---
+export interface PublicStatsResponse {
+  total_escaneos: number;
+  hora_pico: { hour: number; count: number };
+  ultimo_escaneo: string | null;
+  escaneos_por_hora: number[];
+  time_series: Array<{ ts: string; count: number }>;
+  tz: string;
+  dia: string;
+}
+
+export interface DashboardToggleResponse {
+  slug: string;
+  enabled: boolean;
 }
 
