@@ -57,6 +57,32 @@ export function DashboardPage() {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const dashboardUrl = selected ? `${window.location.origin}/dashboard/${selected.slug}` : "";
+  const dashboardOn = selected?.dashboard_enabled ?? false;
+
+  const copyDashboardLink = async () => {
+    if (!dashboardUrl) return;
+    await navigator.clipboard.writeText(dashboardUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const toggleDashboard = async () => {
+    if (!selected) return;
+    const next = !dashboardOn;
+    try {
+      await QRService.setDashboardEnabled(selected.slug, next);
+      setItems((prev) =>
+        prev.map((it) =>
+          it.slug === selected.slug ? { ...it, dashboard_enabled: next } : it,
+        ),
+      );
+      setSelected((prev) => (prev ? { ...prev, dashboard_enabled: next } : prev));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -160,6 +186,41 @@ export function DashboardPage() {
                           {stats?.total_escaneos ?? selected.scan_count}
                         </p>
                       </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                      <p className="text-xs uppercase text-gray-400 mb-2">
+                        Dashboard público de proyección
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={toggleDashboard}
+                          className={`px-3 py-2 rounded-md text-sm font-medium text-white ${
+                            dashboardOn
+                              ? "bg-red-600 hover:bg-red-700"
+                              : "bg-green-600 hover:bg-green-700"
+                          }`}
+                        >
+                          {dashboardOn ? "Apagar" : "Levantar"}
+                        </button>
+                        <button
+                          onClick={copyDashboardLink}
+                          className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"
+                        >
+                          {copied ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                          Copiar enlace
+                        </button>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500 break-all">
+                        {dashboardUrl || "—"}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        El enlace proyecta métricas en pantalla SIN login.
+                      </p>
                     </div>
 
                     <div>
