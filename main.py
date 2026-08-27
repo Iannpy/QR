@@ -1,7 +1,7 @@
 import qrcode
 import os
-from fastapi import FastAPI, Depends, Request, HTTPException
-from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
+from fastapi import FastAPI, Depends, Request, HTTPException, Form
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse, Response
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -42,6 +42,45 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# --- AUTENTICACIÓN (admin simple, cookie firmada HMAC, sin deps extra) ---
+import hmac as _hmac
+import hashlib as _hashlib
+import secrets as _secrets
+from typing import Optional
+
+ADMIN_USER = os.getenv("ADMIN_USER", "admin")
+ADMIN_PASS = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASS:
+    ADMIN_PASS = _secrets.token_hex(8)
+    print(f"[AUTH] ADMIN_PASSWORD no configurado -> Usuario='{ADMIN_USER}' Password temporal='{ADMIN_PASS}'")
+SESSION_SECRET = os.getenv("SESSION_SECRET") or _secrets.token_hex(32)
+SECURE_COOKIES = os.getenv("SECURE_COOKIES") == "1"
+
+
+def _sign(data: str) -> str:
+    sig = _hmac.new(SESSION_SECRET.encode(), data.encode(), _hashlib.sha256).hexdigest()
+    return f"{data}.{sig}"
+
+
+def _verify(token: Optional[str]) -> bool:
+    if not token or "." not in token:
+        return False
+    data, sig = token.rsplit(".", 1)
+    expected = _hmac.new(SESSION_SECRET.encode(), data.encode(), _hashlib.sha256).hexdigest()
+    return _hmac.compare_digest(expected, sig) and data == ADMIN_USER
+
+
+def require_page(request: Request) -> Optional[Response]:
+    if not _verify(request.cookies.get("session")):
+        return RedirectResponse("/login", 303)
+    return None
+
+
+def require_api(request: Request):
+    if not _verify(request.cookies.get("session")):
+        raise HTTPException(status_code=401, detail="No autenticado")
+
+
 def get_db():
     db = SessionLocal()
     try: yield db
@@ -50,7 +89,7 @@ def get_db():
 # --- RUTAS ---
 
 @app.post("/create/{slug}")
-def create_qr(slug: str, target_url: str, request: Request, db: Session = Depends(get_db)):
+def create_qr(slug: str, target_url: str, request: Request, db: Session = Depends(get_db), _: Optional[Response] = Depends(require_api)):
     db_link = Link(slug=slug, target_url=target_url)
     db.add(db_link)
     try:
@@ -85,7 +124,7 @@ def redirect_and_track(slug: str, request: Request, db: Session = Depends(get_db
     return RedirectResponse(url=link.target_url)
 
 @app.get("/stats/{slug}")
-def get_stats(slug: str, db: Session = Depends(get_db)):
+def get_stats(slug: str, db: Session = Depends(get_db), _: Optional[Response] = Depends(require_api)):
     link = db.query(Link).filter(Link.slug == slug).first()
     if not link: raise HTTPException(status_code=404)
     scans = db.query(Scan).filter(Scan.link_id == link.id).all()
@@ -138,14 +177,29 @@ HTML_HEAD = """<!DOCTYPE html>
 </style>
 </head>
 <body>
-<header>
-  <a href="/" id="nav-gen">Generar QR</a>
-  <a href="/dashboard" id="nav-dash">Dashboard</a>
-</header>
+  <header>
+    <a href="/" id="nav-gen">Generar QR</a>
+    <a href="/dashboard" id="nav-dash">Dashboard</a>
+    <a href="/logout" style="margin-left:auto">Salir</a>
+  </header>
 <main>
 """
 
 HTML_FOOT = "</main></body></html>"
+
+LOGIN_PAGE = """
+<div class="card" style="max-width:400px;">
+  <h1>Acceso</h1>
+  <p class="muted">Ingresá tus credenciales de administrador.</p>
+  <form method="post" action="/login">
+    <label>Usuario</label>
+    <input name="username" autocomplete="username">
+    <label>Contraseña</label>
+    <input name="password" type="password" autocomplete="current-password">
+    <button type="submit">Entrar</button>
+  </form>
+</div>
+"""
 
 
 def _page(content: str, active: str = "") -> str:
@@ -215,10 +269,34 @@ async function cargar(){
 
 
 @app.get("/", response_class=HTMLResponse)
-def genera_page():
+def genera_page(_: Optional[Response] = Depends(require_page)):
     return HTMLResponse(content=_page(GEN_PAGE, "nav-gen"))
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard_page():
+def dashboard_page(_: Optional[Response] = Depends(require_page)):
     return HTMLResponse(content=_page(DASH_PAGE, "nav-dash"))
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(error: str = ""):
+    content = LOGIN_PAGE
+    if error:
+        content = content.replace("</form>", '<p class="err">Credenciales inválidas</p></form>')
+    return HTMLResponse(content=_page(content))
+
+
+@app.post("/login")
+def login(username: str = Form(...), password: str = Form(...)):
+    if not (_hmac.compare_digest(username, ADMIN_USER) and _hmac.compare_digest(password, ADMIN_PASS)):
+        return RedirectResponse("/login?error=1", 303)
+    resp = RedirectResponse("/", 303)
+    resp.set_cookie("session", _sign(ADMIN_USER), httponly=True, samesite="lax", secure=SECURE_COOKIES)
+    return resp
+
+
+@app.get("/logout")
+def logout():
+    resp = RedirectResponse("/login", 303)
+    resp.delete_cookie("session")
+    return resp

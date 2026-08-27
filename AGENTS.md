@@ -28,6 +28,13 @@ Dokploy builds this repo as a Docker image from the `Dockerfile` at the root.
 - Local/dev uses SQLite file `qr_manager.db` (created if no `DATABASE_URL`).
 - Deploy uses Postgres via `DATABASE_URL`. Note the quirk at main.py:15 — `postgres://` is rewritten to `postgresql://` because SQLAlchemy requires the latter.
 
+## Auth
+Simple single-admin login (no user system). Cookie signed with HMAC-SHA256, no extra deps.
+- **Protected**: `/`, `/dashboard`, `POST /create/{slug}`, `GET /stats/{slug}`. Unauthenticated page hits redirect to `/login`; API hits return 401.
+- **Public (must stay open)**: `/r/{slug}` (the scan redirect attendees hit), `/download/{slug}` (the QR PNG), `/health`.
+- Credentials come from env: `ADMIN_USER` (default `admin`) and `ADMIN_PASSWORD`. If `ADMIN_PASSWORD` is unset, a random one is generated and **printed to the deploy logs at startup** — set it explicitly in Dokploy to avoid surprises.
+- `SESSION_SECRET` signs the session cookie (random per start if unset). `SECURE_COOKIES=1` enables `Secure` cookies — only set it when behind HTTPS (the `sslip.io` domain is HTTP, so leave it off or the cookie won't persist).
+
 ## Gotchas
 - `procfile` is lowercase. Deploy platforms (Railway/Heroku) auto-detect a capital `Procfile`. On Dokploy the `Dockerfile` is authoritative, so the filename case does not matter there. Verify the deploy target still works before trusting this file.
 - No `.gitignore` exists. Generated artifacts are committed: `qr_manager.db`, `qrs/*.png`, and `__pycache__/`. Review `git status` carefully so you don't accidentally commit DB/PNG changes.
