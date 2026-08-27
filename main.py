@@ -102,6 +102,10 @@ def download_qr(slug: str):
     if os.path.exists(path): return FileResponse(path)
     return {"error": "Archivo no encontrado. ¿Ya creaste el QR?"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # --- FRONTEND (HTML sin build, mismo proceso) ---
 
 HTML_HEAD = """<!DOCTYPE html>
