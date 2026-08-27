@@ -269,12 +269,18 @@ async function cargar(){
 
 
 @app.get("/", response_class=HTMLResponse)
-def genera_page(_: Optional[Response] = Depends(require_page)):
+def genera_page(request: Request):
+    redir = require_page(request)
+    if redir:
+        return redir
     return HTMLResponse(content=_page(GEN_PAGE, "nav-gen"))
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard_page(_: Optional[Response] = Depends(require_page)):
+def dashboard_page(request: Request):
+    redir = require_page(request)
+    if redir:
+        return redir
     return HTMLResponse(content=_page(DASH_PAGE, "nav-dash"))
 
 
