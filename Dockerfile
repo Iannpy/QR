@@ -11,4 +11,4 @@ COPY qrs ./qrs
 EXPOSE 8000
 
 # Dokploy inyecta PORT; usamos 8000 como fallback.
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
