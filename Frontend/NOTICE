@@ -1,0 +1,18 @@
+AVISO DE PROCEDENCIA
+===================
+
+Esta carpeta `Frontend/` es un fork del repositorio público:
+
+    https://github.com/BigNight1/generador-qr-Oficial
+
+Tal como se encontró, AQUEL repositorio NO incluye un archivo LICENSE, por lo que
+por defecto su código queda bajo "todos los derechos reservados" (copyright del autor).
+Copiarlo y redistribuirlo tal cual puede tener implicancias legales.
+
+Cambios realizados en este fork:
+- `src/constants/index.ts`: API base usa `??` para permitir mismo-origen (`VITE_API_URL=""`).
+- `src/main.tsx` e `index.html`: se removió el Google Analytics del autor original.
+- El backend que genera el QR vive en `main.py` (`/api/generate-qr`), no en Node.
+
+RECOMENDACIÓN: antes de desplegar públicamente, solicitá al autor una licencia explícita
+o reescribí las partes que uses bajo tu propia autoría.

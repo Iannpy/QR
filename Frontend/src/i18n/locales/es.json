@@ -1,0 +1,323 @@
+{
+  "header": {
+    "title": "Generador QR",
+    "login": "Iniciar sesión",
+    "history": "Historial",
+    "lightMode": "Modo Claro",
+    "darkMode": "Modo Oscuro",
+    "language": "Idioma"
+  },
+  "main": {
+    "title": "Generador de Código QR",
+    "subtitle": "Genera códigos QR para URLs, WhatsApp, WiFi y Texto",
+    "sectionTitle": "Crea tu código QR"
+  },
+  "form": {
+    "urlLabel": "URL de la página",
+    "whatsappLabel": "Número de WhatsApp",
+    "whatsappMessage": "Mensaje (opcional)",
+    "whatsappMessagePlaceholder": "Escribe un mensaje que se enviará automáticamente...",
+    "urlPlaceholder": "https://ejemplo.com",
+    "whatsappPlaceholder": "51999999999",
+    "wifiSSID": "Nombre de la red (SSID)",
+    "wifiSSIDPlaceholder": "MiRedWiFi",
+    "wifiPassword": "Contraseña",
+    "wifiPasswordPlaceholder": "Contraseña de la red",
+    "wifiSecurity": "Tipo de seguridad",
+    "wifiHidden": "Red oculta",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "text": "Texto",
+    "textLabel": "Texto plano",
+    "textPlaceholder": "Escribe cualquier texto que quieras codificar en el QR...",
+    "textHint": "Cualquier texto será codificado tal como lo escribas",
+    "sizeLabel": "Tamaño del código QR",
+    "lowQuality": "Baja calidad",
+    "highQuality": "Alta calidad",
+    "enableLogo": "Agregar logo al centro del QR",
+    "selectLogo": "Seleccionar logo",
+    "logoFormats": "Formatos: PNG, JPG, GIF. Máximo 10MB",
+    "logoPreview": "Vista previa del logo:",
+    "colorLabel": "Color del código QR",
+    "colorHint": "Usa el selector de color o escribe el código hexadecimal",
+    "formatLabel": "Formato de salida",
+    "generateButton": "Generar QR",
+    "generating": "Generando..."
+  },
+  "qr": {
+    "title": "Código QR Generado",
+    "subtitle": "Tu código está listo para usar",
+    "size": "Tamaño",
+    "format": "Formato",
+    "download": "Descargar QR",
+    "tip": "💡 Escanea este código con cualquier lector QR para verificar que funciona correctamente",
+    "placeholder": "Código QR",
+    "placeholderText": "Aparecerá aquí",
+    "instructions": "Configura las opciones y presiona \"Generar QR\"",
+    "supportCta": "¿Te sirvió? Apóyame",
+    "viewDonations": "Ver opciones de donación"
+  },
+  "sections": {
+    "whatIsQR": {
+      "title": "¿Qué es un código QR?",
+      "description1": "Un código QR (Quick Response) es un código de barras bidimensional que puede almacenar información como URLs, números de teléfono, mensajes de texto y más. Los códigos QR son escaneados fácilmente con la cámara de cualquier smartphone, lo que los hace ideales para compartir información de forma rápida y sin contacto.",
+      "description2": "Nuestra herramienta te permite generar códigos QR de forma gratuita, sin necesidad de registro y sin límites. Puedes crear códigos QR para enlaces web, WhatsApp, WiFi, texto plano y más. Todos los códigos se generan instantáneamente y puedes personalizarlos con diferentes tamaños, colores y formatos de salida.",
+      "description3": "Los códigos QR utilizan un sistema de corrección de errores avanzado que permite que el código sea escaneado correctamente incluso si está parcialmente dañado o cubierto. Esto los hace extremadamente confiables para uso en materiales impresos, publicidad y aplicaciones comerciales.",
+      "description4": "Con nuestro generador, puedes crear códigos QR profesionales en segundos. Soporta múltiples formatos de exportación (PNG, JPG, PDF, SVG) y te permite agregar tu logo personalizado para crear códigos únicos que representen tu marca."
+    },
+    "howToUse": {
+      "title": "¿Cómo usar esta herramienta?",
+      "step1": {
+        "title": "Selecciona el tipo de QR",
+        "description": "Elige entre generar un código QR para una URL o para WhatsApp. Si eliges WhatsApp, podrás agregar un mensaje que se enviará automáticamente al escanear el código."
+      },
+      "step2": {
+        "title": "Ingresa la información",
+        "description": "Escribe la URL completa (por ejemplo: https://ejemplo.com) o el número de WhatsApp con código de país (por ejemplo: 51999999999 para Perú)."
+      },
+      "step3": {
+        "title": "Genera y descarga",
+        "description": "Haz clic en \"Generar QR\" y espera unos segundos. Una vez generado, podrás descargar el código QR en formato PNG para usarlo en tus materiales impresos o digitales."
+      }
+    },
+    "useCases": {
+      "title": "Casos de uso",
+      "intro": "Los códigos QR tienen una amplia variedad de aplicaciones prácticas en diferentes industrias y contextos. Desde marketing digital hasta operaciones comerciales, los códigos QR facilitan la conexión entre el mundo físico y digital de manera instantánea y eficiente.",
+      "marketing": {
+        "title": "Marketing y Publicidad",
+        "description": "Comparte enlaces a tus productos, promociones o páginas web en folletos, carteles y materiales publicitarios. Los códigos QR permiten rastrear el engagement y convertir visitantes físicos en clientes digitales. Ideal para campañas publicitarias, ofertas especiales y landing pages promocionales."
+      },
+      "social": {
+        "title": "Redes Sociales",
+        "description": "Facilita que tus seguidores accedan a tu perfil de WhatsApp o a tu sitio web desde tus publicaciones. Los códigos QR eliminan la necesidad de escribir URLs largas y reducen la fricción en el proceso de conexión. Perfecto para crecer tu audiencia y aumentar la interacción."
+      },
+      "business": {
+        "title": "Tarjetas de Presentación",
+        "description": "Agrega un código QR a tu tarjeta de presentación para que los contactos accedan fácilmente a tu información. Puedes vincular tu perfil de LinkedIn, sitio web, portafolio o información de contacto. Esto moderniza tu networking y facilita el intercambio de información profesional."
+      },
+      "restaurant": {
+        "title": "Menús de Restaurantes",
+        "description": "Proporciona acceso rápido a menús digitales o sistemas de pedidos online mediante códigos QR en las mesas. Esto reduce el contacto físico, permite actualizar menús en tiempo real y mejora la experiencia del cliente. Especialmente útil en la era post-pandemia."
+      },
+      "events": {
+        "title": "Eventos",
+        "description": "Comparte información de eventos, formularios de registro o grupos de WhatsApp para participantes. Los códigos QR en entradas, programas o materiales del evento facilitan la interacción y el networking. También puedes usarlos para encuestas post-evento y recopilación de feedback."
+      },
+      "support": {
+        "title": "Soporte al Cliente",
+        "description": "Ofrece un canal directo de comunicación con WhatsApp para que los clientes contacten fácilmente. Los códigos QR en productos, manuales o materiales de soporte permiten a los clientes obtener ayuda instantánea sin buscar números de teléfono o URLs. Mejora significativamente la satisfacción del cliente."
+      }
+    }
+  },
+  "footer": {
+    "description": "Herramienta gratuita para generar códigos QR de forma rápida y sencilla. Sin registro, sin límites, sin complicaciones. Crea códigos QR personalizados para URLs, WhatsApp, WiFi y texto en segundos.",
+    "features": "Características",
+    "free": "100% Gratis",
+    "instant": "Generación instantánea",
+    "unlimited": "Sin límites de uso",
+    "madeBy": "Hecho por",
+    "about": "Acerca de",
+    "donations": "Donaciones",
+    "faq": "Preguntas Frecuentes",
+    "terms": "Términos y Condiciones",
+    "privacy": "Política de Privacidad",
+    "cookies": "Política de Cookies"
+  },
+  "errors": {
+    "invalidImage": "Por favor, selecciona un archivo de imagen válido",
+    "fileTooLarge": "El logo no debe superar los 10MB",
+    "logoRequired": "Por favor, selecciona un logo para agregar al QR",
+    "urlRequired": "Por favor, ingresa una URL",
+    "wifiSSIDRequired": "Por favor, ingresa el nombre de la red WiFi",
+    "textRequired": "Por favor, ingresa un texto",
+    "generateError": "Hubo un problema al generar el código QR",
+    "genericError": "Error"
+  },
+  "alerts": {
+    "comingSoon": "Muy pronto"
+  },
+  "history": {
+    "title": "Historial de Códigos QR",
+    "subtitle": "{{count}} código(s) generado(s)",
+    "empty": "Todavía no generaste ningún código QR",
+    "back": "Volver",
+    "clear": "Limpiar historial",
+    "confirmClear": "¿Estás seguro de que quieres eliminar todo el historial?",
+    "url": "URL",
+    "copy": "Copiar",
+    "copyUrl": "Copiar URL",
+    "copied": "Copiado",
+    "copyError": "Error al copiar la URL",
+    "format": "Formato",
+    "size": "Tamaño",
+    "sizeUnknown": "Desconocido",
+    "date": "Fecha",
+    "download": "Descargar",
+    "downloadError": "Error al descargar el código QR"
+  },
+  "legal": {
+    "terms": {
+      "title": "Términos y Condiciones",
+      "lastUpdated": "Última actualización",
+      "section1": {
+        "title": "1. Aceptación de los Términos",
+        "content": "Al acceder y utilizar el Generador QR, aceptas cumplir con estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestro servicio."
+      },
+      "section2": {
+        "title": "2. Uso del Servicio",
+        "content": "Nuestro servicio es gratuito y está disponible para uso personal y comercial. Puedes generar códigos QR ilimitados sin necesidad de registro. Nos reservamos el derecho de modificar, suspender o discontinuar el servicio en cualquier momento sin previo aviso."
+      },
+      "section3": {
+        "title": "3. Contenido Generado",
+        "content": "Eres responsable del contenido que codificas en los códigos QR generados. No debes usar nuestro servicio para crear códigos QR que contengan contenido ilegal, ofensivo, malicioso o que viole derechos de terceros. No nos hacemos responsables del uso indebido de los códigos QR generados."
+      },
+      "section4": {
+        "title": "4. Propiedad Intelectual",
+        "content": "El servicio y su contenido son propiedad de Generador QR. Los códigos QR generados son de tu propiedad y puedes usarlos libremente. Sin embargo, no puedes copiar, modificar o distribuir el código fuente de nuestra herramienta sin autorización."
+      },
+      "section5": {
+        "title": "5. Limitación de Responsabilidad",
+        "content": "Proporcionamos el servicio 'tal cual' sin garantías de ningún tipo. No garantizamos que el servicio esté libre de errores o interrupciones. No seremos responsables por daños directos, indirectos, incidentales o consecuentes derivados del uso de nuestro servicio."
+      },
+      "section6": {
+        "title": "6. Modificaciones",
+        "content": "Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigor inmediatamente después de su publicación. Es tu responsabilidad revisar periódicamente estos términos."
+      },
+      "section7": {
+        "title": "7. Contacto",
+        "content": "Si tienes alguna pregunta sobre estos Términos y Condiciones, puedes contactarnos a través de nuestra página de Facebook 'BigNight' o visitando nuestro perfil en las redes sociales disponibles en el footer del sitio."
+      }
+    },
+    "privacy": {
+      "title": "Política de Privacidad",
+      "lastUpdated": "Última actualización",
+      "section1": {
+        "title": "1. Información que Recopilamos",
+        "content": "No recopilamos información personal identificable. Los códigos QR que generas se procesan localmente en tu navegador y no se almacenan en nuestros servidores. Solo guardamos preferencias locales como el idioma y el tema (modo oscuro/claro) en tu dispositivo."
+      },
+      "section2": {
+        "title": "2. Uso de Cookies",
+        "content": "Utilizamos cookies técnicas necesarias para el funcionamiento del sitio, como almacenar tus preferencias de idioma y tema. Estas cookies no contienen información personal y son esenciales para la funcionalidad del servicio."
+      },
+      "section3": {
+        "title": "3. Almacenamiento Local",
+        "content": "Tu historial de códigos QR se almacena únicamente en tu navegador usando localStorage. Esta información nunca se transmite a nuestros servidores y permanece completamente privada en tu dispositivo."
+      },
+      "section4": {
+        "title": "4. Servicios de Terceros",
+        "content": "Utilizamos servicios de publicidad de terceros para mostrar anuncios. Estos servicios pueden usar cookies para personalizar anuncios según tus intereses. Puedes gestionar tus preferencias de cookies a través de la configuración de tu navegador."
+      },
+      "section5": {
+        "title": "5. Seguridad",
+        "content": "Implementamos medidas de seguridad para proteger tu información. Sin embargo, ningún método de transmisión por Internet es 100% seguro. No podemos garantizar la seguridad absoluta de los datos."
+      },
+      "section6": {
+        "title": "6. Cambios a esta Política",
+        "content": "Podemos actualizar esta Política de Privacidad ocasionalmente. Te notificaremos de cualquier cambio publicando la nueva política en esta página. Te recomendamos revisar esta política periódicamente."
+      },
+      "section7": {
+        "title": "7. Contacto",
+        "content": "Si tienes alguna pregunta sobre esta Política de Privacidad o sobre cómo manejamos tus datos, puedes contactarnos a través de nuestra página de Facebook 'BigNight' o visitando nuestro perfil en las redes sociales disponibles en el footer del sitio."
+      }
+    },
+    "cookies": {
+      "title": "Política de Cookies",
+      "lastUpdated": "Última actualización",
+      "section1": {
+        "title": "1. ¿Qué son las Cookies?",
+        "content": "Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas un sitio web. Nos ayudan a recordar tus preferencias y mejorar tu experiencia de navegación."
+      },
+      "section2": {
+        "title": "2. Cookies que Utilizamos",
+        "content": "Utilizamos cookies técnicas esenciales para el funcionamiento del sitio, como almacenar tu idioma preferido y el modo oscuro/claro. También utilizamos cookies de servicios de publicidad de terceros para mostrar anuncios relevantes."
+      },
+      "section3": {
+        "title": "3. Gestión de Cookies",
+        "content": "Puedes controlar y gestionar las cookies a través de la configuración de tu navegador. Ten en cuenta que deshabilitar ciertas cookies puede afectar la funcionalidad del sitio."
+      },
+      "section4": {
+        "title": "4. Cookies de Terceros",
+        "content": "Los servicios de publicidad de terceros utilizan cookies para personalizar anuncios. Puedes obtener más información sobre cómo estos servicios utilizan las cookies consultando sus respectivas políticas de privacidad."
+      },
+      "section5": {
+        "title": "5. Contacto",
+        "content": "Si tienes alguna pregunta sobre nuestra Política de Cookies, puedes contactarnos a través de nuestra página de Facebook 'BigNight' o visitando nuestro perfil en las redes sociales disponibles en el footer del sitio."
+      }
+    }
+  },
+  "faq": {
+    "title": "Preguntas Frecuentes",
+    "subtitle": "Encuentra respuestas a las preguntas más comunes sobre nuestro generador de códigos QR",
+    "question1": "¿Es gratis usar el generador de códigos QR?",
+    "answer1": "Sí, nuestro generador de códigos QR es completamente gratuito. No requiere registro y no tiene límites en la cantidad de códigos que puedes generar.",
+    "question2": "¿Qué tipos de códigos QR puedo generar?",
+    "answer2": "Puedes generar códigos QR para URLs, WhatsApp (con mensaje predefinido), redes WiFi (con SSID y contraseña), y texto plano. Todos los tipos son completamente personalizables.",
+    "question3": "¿Puedo agregar mi logo a los códigos QR?",
+    "answer3": "Sí, puedes agregar tu logo personalizado al centro del código QR. El logo se redimensiona automáticamente para mantener la legibilidad del código.",
+    "question4": "¿En qué formatos puedo descargar los códigos QR?",
+    "answer4": "Puedes descargar tus códigos QR en múltiples formatos: PNG, JPG, PDF y SVG. Cada formato es ideal para diferentes usos (impresión, web, documentos, etc.).",
+    "question5": "¿Se almacena mi información en los servidores?",
+    "answer5": "No, todos los códigos QR se generan localmente en tu navegador. Tu historial se guarda solo en tu dispositivo usando localStorage. Nunca enviamos tus datos a nuestros servidores.",
+    "question6": "¿Los códigos QR generados tienen límite de tiempo?",
+    "answer6": "No, los códigos QR generados no tienen fecha de expiración. Funcionarán indefinidamente siempre que el contenido al que apuntan (URL, etc.) siga siendo válido.",
+    "question7": "¿Puedo personalizar el color de los códigos QR?",
+    "answer7": "Sí, puedes elegir cualquier color para tus códigos QR usando el selector de color o ingresando un código hexadecimal. Esto te permite crear códigos que coincidan con tu marca.",
+    "question8": "¿Qué tamaño de código QR debo usar?",
+    "answer8": "El tamaño recomendado depende del uso: 200-300px para web, 500-1000px para impresión, y hasta 2000px para materiales de gran formato. Nuestro generador permite ajustar el tamaño según tus necesidades.",
+    "question9": "¿Puedo ver mi historial de códigos QR generados?",
+    "answer9": "Sí, puedes acceder a tu historial completo desde el botón 'Historial' en el menú. Allí verás todos los códigos que has generado, con la opción de descargarlos nuevamente.",
+    "question10": "¿El servicio funciona sin conexión a Internet?",
+    "answer10": "No, necesitas conexión a Internet para generar códigos QR, ya que el procesamiento se realiza en nuestros servidores. Sin embargo, una vez generados, los códigos funcionan sin conexión."
+  },
+  "about": {
+    "title": "Acerca de Generador QR",
+    "intro": "Generador QR es una herramienta web gratuita y de código abierto diseñada para crear códigos QR personalizados de manera rápida y sencilla. Nuestra misión es proporcionar una solución accesible para todos, sin barreras de registro, costos ocultos o limitaciones artificiales.",
+    "mission": {
+      "title": "Nuestra Misión",
+      "content": "Creemos que la tecnología debe ser accesible para todos. Por eso, ofrecemos un generador de códigos QR completamente gratuito, sin necesidad de registro, que permite a usuarios y empresas crear códigos QR profesionales en segundos. Nuestro objetivo es simplificar el proceso de creación de códigos QR mientras mantenemos la calidad y las opciones de personalización."
+    },
+    "features": {
+      "title": "Características Principales",
+      "item1": "Generación instantánea de códigos QR sin límites",
+      "item2": "Múltiples tipos de QR: URLs, WhatsApp, WiFi y texto",
+      "item3": "Personalización completa: tamaño, color y formato",
+      "item4": "Soporte para logos personalizados",
+      "item5": "Historial local para acceder a tus códigos anteriores"
+    },
+    "community": {
+      "title": "Comunidad y Soporte",
+      "content": "Generador QR es un proyecto de código abierto mantenido por la comunidad. Valoramos el feedback de nuestros usuarios y trabajamos constantemente para mejorar la herramienta. Si tienes sugerencias, encuentras errores o quieres contribuir al proyecto, puedes contactarnos a través de nuestras redes sociales."
+    },
+    "openSource": {
+      "title": "Código Abierto",
+      "content": "Este proyecto es de código abierto y está disponible en GitHub. Creemos en la transparencia y en el poder de la colaboración. Si eres desarrollador y quieres contribuir, mejorar o adaptar el código, eres bienvenido a hacerlo."
+    }
+  },
+  "donations": {
+    "title": "Apoya este proyecto",
+    "subtitle": "Generador QR gratis y sin anuncios",
+    "notRequired": "No es necesario donar. Ya me apoyan muchísimo usando la app y compartiéndola para que otras personas la usen y les sirva. Si aún así quieres apoyar con una donación, aquí tienes las opciones.",
+    "greeting": "Hola, soy Edu.",
+    "role": "Programador Full stack",
+    "message": "Este generador de códigos QR es gratis y sin anuncios. Si te ha servido, puedes apoyar el proyecto con una donación voluntaria. Si no puedes o no quieres donar, no hay problema: me apoyas igual usando la app y compartiéndola con quien le pueda servir.",
+    "otherAmount": "Otro monto",
+    "methodsTitle": "Métodos de donación",
+    "yapeNumber": "Número Yape (copiar)",
+    "yapePlaceholder": "965 728 013",
+    "plinNumber": "Número Plin (copiar)",
+    "plinPlaceholder": "965 728 013",
+    "paypalLink": "https://paypal.me/EduArmas?locale.x=es_XC&country.x=PE",
+    "paypalCta": "Donar con PayPal",
+    "binanceWallet": "Wallet USDT (BEP20 o red que prefieras)",
+    "binancePlaceholder": "0x...",
+    "binancePayHint": "Escanea el QR con Binance Pay para donar",
+    "binancePayIdLabel": "Si no puedes escanear, usa mi ID:",
+    "transparencyTitle": "¿En qué se usa tu apoyo?",
+    "transparency1": "Dominio y hosting para mantener la app online",
+    "transparency2": "Mejoras y nuevas funciones",
+    "transparency3": "Mantener el proyecto sin anuncios ni paywall",
+    "thanks": "Gracias por apoyar y probar la app espero pueda compartirla con quien le pueda servir",
+    "backToGenerator": "Volver al generador"
+  }
+}
+

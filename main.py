@@ -1,7 +1,13 @@
+import re
 import qrcode
 import os
+import base64
+import io
+from PIL import Image
+from qrcode.image.svg import SvgPathImage
+from pydantic import BaseModel
 from fastapi import FastAPI, Depends, Request, HTTPException, Form
-from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse, Response
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse, Response, JSONResponse
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -124,7 +130,25 @@ def redirect_and_track(slug: str, request: Request, db: Session = Depends(get_db
     db.add(new_scan)
     db.commit()
 
-    return RedirectResponse(url=link.target_url)
+    target = link.target_url or ""
+    # URL/WhatsApp: redirección directa (tracking transparente).
+    if target.startswith("http://") or target.startswith("https://"):
+        return RedirectResponse(url=target)
+
+    # WiFi / Texto / otros: no se puede redirigir, mostramos la info
+    # (el escaneo ya quedó registrado arriba).
+    safe_target = (target or "").replace("<", "&lt;").replace(">", "&gt;")
+    html = f"""<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR</title></head>
+<body style="font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;background:#0f172a;color:#e2e8f0">
+<div style="max-width:480px;text-align:center;padding:24px">
+<h2>Código QR escaneado</h2>
+<p style="word-break:break-all;background:#1e293b;padding:16px;border-radius:12px">{safe_target}</p>
+<p style="color:#94a3b8;font-size:14px">Este escaneo fue registrado.</p>
+</div></body></html>"""
+    return HTMLResponse(content=html)
 
 @app.get("/stats/{slug}")
 def get_stats(slug: str, db: Session = Depends(get_db), _: Optional[Response] = Depends(require_api)):
@@ -272,27 +296,27 @@ async function cargar(){
 
 
 @app.get("/", response_class=HTMLResponse)
-def genera_page(request: Request):
-    redir = require_page(request)
-    if redir:
-        return redir
+def genera_page():
+    index = os.path.join(DIST_DIR, "index.html")
+    if os.path.isfile(index):
+        return FileResponse(index)
     return HTMLResponse(content=_page(GEN_PAGE, "nav-gen"))
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard_page(request: Request):
-    redir = require_page(request)
-    if redir:
-        return redir
+def dashboard_page():
+    index = os.path.join(DIST_DIR, "index.html")
+    if os.path.isfile(index):
+        return FileResponse(index)
     return HTMLResponse(content=_page(DASH_PAGE, "nav-dash"))
 
 
 @app.get("/login", response_class=HTMLResponse)
-def login_page(error: str = ""):
-    content = LOGIN_PAGE
-    if error:
-        content = content.replace("</form>", '<p class="err">Credenciales inválidas</p></form>')
-    return HTMLResponse(content=_page(content))
+def login_page():
+    index = os.path.join(DIST_DIR, "index.html")
+    if os.path.isfile(index):
+        return FileResponse(index)
+    return HTMLResponse(content=_page(LOGIN_PAGE))
 
 
 @app.post("/login")
@@ -309,3 +333,177 @@ def logout():
     resp = RedirectResponse("/login", 303)
     resp.delete_cookie("session")
     return resp
+
+
+# --- API PÚBLICA: genera QR por string (URL / WhatsApp / WiFi / Texto) ---
+# Contrato compatible con el frontend React (Frontend/src/services/qrService.ts):
+#   POST /api/generate-qr  { url, size, logo?, format?, color? }
+#   -> { qrCode: "data:...;base64,...", size }
+
+class QRGenerateRequest(BaseModel):
+    url: str
+    size: int = 500
+    logo: str | None = None
+    format: str = "png"
+    color: str = "#000000"
+
+
+def _embed_logo(qr_img: Image.Image, logo_data_uri: str, size: int) -> Image.Image:
+    header, b64 = logo_data_uri.split(",", 1)
+    logo = Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGBA")
+    max_logo = int(size * 0.25)
+    logo.thumbnail((max_logo, max_logo), Image.LANCZOS)
+    pad = int(size * 0.02)
+    bg = Image.new("RGBA", (logo.width + pad * 2, logo.height + pad * 2), (255, 255, 255, 255))
+    bg.paste(logo, (pad, pad), logo)
+    canvas = qr_img.convert("RGBA")
+    canvas.paste(bg, ((size - bg.width) // 2, (size - bg.height) // 2))
+    return canvas.convert("RGB")
+
+
+def _make_qr_png(content: str, size: int, color: str, logo: str | None) -> bytes:
+    qr = qrcode.QRCode(
+        error_correction=qrcode.constants.ERROR_CORRECTION_H,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(content)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color=color or "#000000", back_color="white").convert("RGB").resize((size, size))
+    if logo:
+        try:
+            img = _embed_logo(img, logo, size)
+        except Exception:
+            pass  # si el logo falla, devolvemos el QR sin logo
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@app.post("/api/generate-qr")
+def generate_qr(data: QRGenerateRequest):
+    if not data.url or not data.url.strip():
+        raise HTTPException(status_code=400, detail="URL es requerida")
+
+    fmt = (data.format or "png").lower()
+    size = max(200, min(2000, int(data.size or 500)))
+    fill = data.color or "#000000"
+
+    if fmt == "svg":
+        qr = qrcode.QRCode(
+            error_correction=qrcode.constants.ERROR_CORRECTION_H,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data.url)
+        qr.make(fit=True)
+        svg = qr.make_image(image_factory=SvgPathImage, fill_color=fill, back_color="white")
+        raw = svg.to_string()
+        return {"qrCode": "data:image/svg+xml;base64," + base64.b64encode(raw).decode(), "size": size}
+
+    png = _make_qr_png(data.url, size, fill, data.logo)
+    if fmt in ("jpg", "jpeg"):
+        rgb = Image.open(io.BytesIO(png)).convert("RGB")
+        buf = io.BytesIO()
+        rgb.save(buf, format="JPEG", quality=90)
+        mime = "image/jpeg"
+        raw = buf.getvalue()
+    else:
+        mime = "image/png"
+        raw = png
+
+    return {"qrCode": f"data:{mime};base64," + base64.b64encode(raw).decode(), "size": size}
+
+
+# --- AUTH (JSON, para el SPA) ---
+@app.post("/api/login")
+def api_login(username: str = Form(...), password: str = Form(...)):
+    if not (_hmac.compare_digest(username, ADMIN_USER) and _hmac.compare_digest(password, ADMIN_PASS)):
+        return JSONResponse(status_code=401, content={"ok": False, "error": "Credenciales inválidas"})
+    resp = JSONResponse(content={"ok": True})
+    resp.set_cookie("session", _sign(ADMIN_USER), httponly=True, samesite="lax", secure=SECURE_COOKIES)
+    return resp
+
+
+@app.get("/api/auth/status")
+def auth_status(request: Request):
+    if not _verify(request.cookies.get("session")):
+        raise HTTPException(status_code=401, detail="No autenticado")
+    return {"authenticated": True, "user": ADMIN_USER}
+
+
+# --- QR TRACKEADO (requiere auth) ---
+# Crea/actualiza un Link y genera el PNG que apunta a /r/{slug} (con tracking).
+class TrackedQRRequest(BaseModel):
+    slug: str
+    target_url: str
+    size: int = 500
+    logo: str | None = None
+    color: str = "#000000"
+
+
+def _save_tracked_png(slug: str, content: str, size: int, color: str, logo: str | None) -> None:
+    if not os.path.exists("qrs"):
+        os.makedirs("qrs")
+    png = _make_qr_png(content, size, color, logo)
+    with open(f"qrs/{slug}.png", "wb") as f:
+        f.write(png)
+
+
+@app.post("/api/qr")
+def create_tracked_qr(
+    data: TrackedQRRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _: Optional[Response] = Depends(require_api),
+):
+    slug = (data.slug or "").strip()
+    target = (data.target_url or "").strip()
+    if not slug or not target:
+        raise HTTPException(status_code=400, detail="slug y target_url son requeridos")
+    if not re.match(r"^[A-Za-z0-9._-]+$", slug):
+        raise HTTPException(status_code=400, detail="slug inválido (usa letras, números, . _ -)")
+    size = max(200, min(2000, int(data.size or 500)))
+    link = db.query(Link).filter(Link.slug == slug).first()
+    if link:
+        link.target_url = target
+    else:
+        link = Link(slug=slug, target_url=target)
+        db.add(link)
+    db.commit()
+    base_url = str(request.base_url).rstrip("/")
+    content = f"{base_url}/r/{slug}"
+    _save_tracked_png(slug, content, size, data.color or "#000000", data.logo)
+    return {"slug": slug, "url": f"/download/{slug}", "tracking_url": content}
+
+
+@app.get("/api/qrs")
+def list_qrs(db: Session = Depends(get_db), _: Optional[Response] = Depends(require_api)):
+    links = db.query(Link).order_by(Link.id.desc()).all()
+    result = []
+    for l in links:
+        count = db.query(Scan).filter(Scan.link_id == l.id).count()
+        result.append({"slug": l.slug, "target_url": l.target_url, "scan_count": count})
+    return result
+
+
+# --- SERVIR EL FRONTEND (SPA React) DESDE EL MISMO PROCESO ---
+# El SPA se construye con `npm run build` en Frontend/ -> Frontend/dist/.
+# Rutas explícitas (/dashboard, /login, /r/{slug}, /download, /stats, /api/...)
+# tienen prioridad sobre este catch-all.
+
+DIST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Frontend", "dist")
+
+
+@app.get("/{full_path:path}")
+def spa_fallback(full_path: str):
+    candidate = os.path.join(DIST_DIR, full_path)
+    if full_path and os.path.isfile(candidate):
+        return FileResponse(candidate)
+    index = os.path.join(DIST_DIR, "index.html")
+    if os.path.isfile(index):
+        return FileResponse(index)
+    return HTMLResponse(
+        content="<h1>Frontend no construido</h1><p>Ejecutá <code>npm run build</code> en la carpeta Frontend/.</p>",
+        status_code=503,
+    )

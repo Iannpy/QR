@@ -3,15 +3,19 @@
 Compact guidance for OpenCode sessions in this repo.
 
 ## What this is
-A single-file FastAPI app (`main.py`) that generates QR codes and tracks scans.
-- QR PNGs are written to `qrs/<slug>.png`.
+A FastAPI backend (`main.py`) that generates QR codes and tracks scans, serving a React+Vite SPA frontend built from `Frontend/`.
+- QR PNGs are written to `qrs/<slug>.png` (dynamic/tracked QR via `/create/{slug}` + `/r/{slug}`).
 - Click tracking via a `Scan` table; redirects via `/r/{slug}`.
-- There is a built-in web UI (HTML served by FastAPI, no build step): `/` generates a QR, `/dashboard` shows scan stats per slug.
-- No package structure, no tests, no lint, no typecheck, no CI are configured. Do not invent these commands.
+- The public generator UI is the React SPA (`Frontend/`), built to `Frontend/dist/` and served by FastAPI. It calls `/api/generate-qr` (static, legacy) and, para QR con tracking, `POST /api/qr` (crea el Link y devuelve `/download/{slug}`). `BrowserRouter` deep links rely on the SPA catch-all in `main.py`.
+- El generador y el dashboard SON la SPA (rutas `/`, `/generador-qr/:type`, `/dashboard`) y requieren login. El login es un formulario React que usa `POST /api/login` + `GET /api/auth/status` (cookie HMAC). `GET /login` y `GET /dashboard` sirven el SPA.
+- El dashboard (`/dashboard`) muestra la lista de QR (`GET /api/qrs`) con un QR predeterminado (el más reciente) y permite cambiar a otro; usa `GET /stats/{slug}` para los escaneos.
+- `Frontend/` was forked from `github.com/BigNight1/generador-qr-Oficial` (see `Frontend/NOTICE`): original repo has NO license, so confirm licensing before public deploy. Google Analytics del autor fue removido.
 
 ## Run it
 Use the existing virtualenv `venv/` (Python 3.14 per `venv/pyvenv.cfg`).
-- Dev server: `uvicorn main:app --reload`
+- Dev server (API + SPA already built): `uvicorn main:app --reload`
+- Frontend build (required before serving the SPA): `cd Frontend && npm install && VITE_API_URL="" npm run build`
+  - `VITE_API_URL` defaults to same-origin (""), so the SPA calls `/api/generate-qr` on FastAPI. For `vite dev` against a separate API, set `VITE_API_URL=http://localhost:8000`.
 - Deploy entrypoint (`procfile`): `web: uvicorn main:app --host 0.0.0.0 --port $PORT`
 
 ## Deploy on Dokploy
@@ -33,7 +37,9 @@ Dokploy builds this repo as a Docker image from the `Dockerfile` at the root.
 
 ## Auth
 Simple single-admin login (no user system). Cookie signed with HMAC-SHA256, no extra deps.
-- **Protected**: `/`, `/dashboard`, `POST /create/{slug}`, `GET /stats/{slug}`. Unauthenticated page hits redirect to `/login`; API hits return 401.
+- **Protected (API, devuelve 401 si no auth)**: `POST /api/qr`, `GET /api/qrs`, `GET /stats/{slug}`. El SPA protege las rutas `/`, `/generador-qr/:type`, `/dashboard` vía `GET /api/auth/status` (redirige a `/login`).
+- **Login SPA**: `POST /api/login` (FormData username/password) setea la cookie; `GET /api/auth/status` la verifica.
+- `POST /create/{slug}` y `GET /login`/`GET /logout` siguen existiendo para compatibilidad (el SPA usa /api/login).
 - **Public (must stay open)**: `/r/{slug}` (the scan redirect attendees hit), `/download/{slug}` (the QR PNG), `/health`.
 - Credentials come from env: `ADMIN_USER` (default `admin`) and `ADMIN_PASSWORD`. If `ADMIN_PASSWORD` is unset, a random one is generated and **printed to the deploy logs at startup** — set it explicitly in Dokploy to avoid surprises.
 - `SESSION_SECRET` signs the session cookie (random per start if unset). `SECURE_COOKIES=1` enables `Secure` cookies — only set it when behind HTTPS (the `sslip.io` domain is HTTP, so leave it off or the cookie won't persist).
