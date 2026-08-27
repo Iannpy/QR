@@ -6,6 +6,11 @@ import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
+// Página pública de proyección: NO debe usar useAuth ni el guard <Protected>.
+const ProjectionPage = lazy(() =>
+  import("./pages/ProjectionPage").then((m) => ({ default: m.ProjectionPage })),
+);
+
 const History = lazy(() => import("./components/history/History").then((m) => ({ default: m.History })));
 const Terms = lazy(() => import("./pages/Terms").then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import("./pages/Privacy").then((m) => ({ default: m.Privacy })));
@@ -50,6 +55,8 @@ function Shell() {
               }
             />
             <Route path="/login" element={<LoginPage />} />
+            {/* Ruta PÚBLICA: fuera de <Protected>, sin auth. */}
+            <Route path="/dashboard/:slug" element={<ProjectionPage />} />
             <Route path="/history" element={<History />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
